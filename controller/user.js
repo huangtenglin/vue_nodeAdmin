@@ -36,6 +36,7 @@ exports.registerController = (req, res) => {
   ]
   // 生成随机数
   const num = Math.floor(Math.random() * 10 + 1)
+  console.log(num)
   // 生成随机头像数
   const head_img = imgList[num]
   // 数据库user插入
@@ -77,5 +78,22 @@ exports.loginContoller = (req, res) => {
     const user = { ...results[0], pwd: '' }
     const token = jwt.sign(user, jwtSecretKey, { expiresIn: '24h' })
     res.send({ code: 0, message: "登录成功", token: "Bearer " + token })
+  })
+}
+
+/**
+ * 用户信息查询接口
+ */
+exports.userInfoController = (req, res) => {
+  // 获取前端传来的请求头token
+  const token = req.headers.authorization
+  // 对token的一个解析
+  const userInfo = jwt.verify(token.split('Bearer ')[1], jwtSecretKey)
+  res.send({
+    code: 0,
+    data: {
+      name: userInfo.name,
+      headImg: userInfo.head_img,
+    },
   })
 }
