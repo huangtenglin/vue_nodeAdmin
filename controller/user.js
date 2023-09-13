@@ -4,12 +4,11 @@
 const bcryptJs = require("bcryptjs")
 
 const db = require("../config/db")
+const { jwtSecretKey } = require("../config/jwtSecretKey")
+const jwt = require('jsonwebtoken')
+
 exports.registerController = (req, res) => {
   let { username, password } = req.body
-  console.log(req.body)
-  if (!username || !password) {
-    return res.send({ code: 1, message: '用户名或者密码不能为空' })
-  }
   const userSelectSql = "select * from user where name= ?"
   // 注册接口逻辑
   db.query(userSelectSql, username, (err, results) => {
@@ -60,5 +59,23 @@ exports.registerController = (req, res) => {
  * 用户登录模块处理
  */
 exports.loginContoller = (req, res) => {
-  res.send("用户登录成功")
+  const { username, password } = req.body
+  const userSelectSql = "select * from user where name = ?"
+  db.query(userSelectSql, username, (err, results) => {
+    if (err) {
+      return res.send({ code: 1, message: err.message })
+    }
+    if (results.length == 0) {
+      return res.send({ code: 1, message: '用户不存在' })
+    }
+    // 判断用户密码是否正确
+    const compareState = bcryptJs.compareSync(password, results[0].pwd)
+    if (!compareState) {
+      return res.send({ code: 1, message: "用户密码不正确" })
+    }
+    // 其中user为token配置的数据,pwd设置为空的字符串是不能被人知道的
+    const user = { ...results[0], pwd: '' }
+    const token = jwt.sign(user, jwtSecretKey, { expiresIn: '24h' })
+    res.send({ code: 0, message: "登录成功", token: "Bearer " + token })
+  })
 }
